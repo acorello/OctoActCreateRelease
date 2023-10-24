@@ -37,6 +37,15 @@ func main() {
 
 	flag.Parse()
 
+	if r, err := run(r, repo, assetsDir); err != nil {
+		fmt.Fprint(os.Stderr, "Error:", err)
+		os.Exit(1)
+	} else {
+		t.Execute(os.Stdout, r)
+	}
+}
+
+func run(r *github.RepositoryRelease, repo RepoInfo, assetsDir string) (*github.RepositoryRelease, error) {
 	ctx := context.Background()
 	ts := oauth2.StaticTokenSource(
 		&oauth2.Token{AccessToken: repo.Token},
@@ -44,20 +53,15 @@ func main() {
 	tc := oauth2.NewClient(ctx, ts)
 	client := github.NewClient(tc)
 
-	// the github client sucks
 	r, _, err := client.Repositories.CreateRelease(ctx, repo.Owner, repo.Name, r)
 	if err != nil {
-		fmt.Println("Failed to create the release:", err)
-		return
+		return r, fmt.Errorf("Failed to create the release: %v", err)
 	}
-
-	t.Execute(os.Stdout, r)
 
 	if !strings.HasSuffix(assetsDir, "/") {
 		assetsDir = assetsDir + "/"
 	}
 
-	// this passing errors around seems verbose!
 	err = filepath.WalkDir(assetsDir, func(path string, info fs.DirEntry, err error) error {
 		if err != nil {
 			return fmt.Errorf("error at %q: %v", path, err)
@@ -71,10 +75,7 @@ func main() {
 		}
 		return nil
 	})
-
-	if err != nil {
-		fmt.Println("Failed to upload the assets:", err)
-	}
+	return r, err
 }
 
 var t = Must(template.New("report").Parse(`Release Created
