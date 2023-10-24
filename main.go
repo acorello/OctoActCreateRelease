@@ -8,6 +8,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/google/go-github/v38/github"
 	"golang.org/x/oauth2"
@@ -50,6 +51,8 @@ func main() {
 		return
 	}
 
+	t.Execute(os.Stdout, r)
+
 	if !strings.HasSuffix(assetsDir, "/") {
 		assetsDir = assetsDir + "/"
 	}
@@ -74,7 +77,10 @@ func main() {
 	}
 }
 
-// if I pass in client
+var t = Must(template.New("report").Parse(`Release Created
+	WEB:	{{ .GetHTMLURL }}
+	API:	{{ .GetURL }}
+`))
 
 func UploadAsset(ctx context.Context, client *github.Client, releaseId int64, basePath, fullpath string, repo *RepoInfo) error {
 	file, err := os.Open(fullpath)
@@ -99,4 +105,11 @@ func newRelease() *github.RepositoryRelease {
 		Draft:                  new(bool),
 		Prerelease:             new(bool),
 	}
+}
+
+func Must[T any](value T, err error) T {
+	if err != nil {
+		panic(err)
+	}
+	return value
 }
