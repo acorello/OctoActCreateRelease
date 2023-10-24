@@ -22,7 +22,7 @@ type Assets string
 
 func main() {
 	var repo RepoInfo
-	flag.StringVar(&repo.Token, "auth-token", "", "authentication token")
+	flag.StringVar(&repo.Token, "auth-token", os.Getenv("GITHUB_TOKEN"), "authentication token")
 	flag.StringVar(&repo.Owner, "repo-owner", "", "repository owner name")
 	flag.StringVar(&repo.Name, "repo", "", "repository")
 
@@ -35,7 +35,16 @@ func main() {
 	flag.BoolVar(r.Draft, "is-draft", true, "is this a draft-release?")
 	flag.BoolVar(r.Prerelease, "is-pre-release", true, "is this a pre-release?")
 
+	var printConf bool
+	flag.BoolVar(&printConf, "print-conf", false, "print config and exit")
 	flag.Parse()
+
+	if printConf {
+		fmt.Printf("Repo-Info:\n\t%#v\n", repo)
+		fmt.Printf("Assets-Dir:\n\t%q\n", assetsDir)
+		fmt.Printf("Release:\n\t%s\n", r.String())
+		os.Exit(0)
+	}
 
 	if r, err := run(r, repo, assetsDir); err != nil {
 		fmt.Fprint(os.Stderr, "Error:", err)
